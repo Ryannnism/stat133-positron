@@ -88,3 +88,82 @@ zev |>
 # 140 more rows
 
 #Part 4: Beyond the Dashboard
+#Part A: One question I had was "Which vehicle models and makes are the most popular zero-emission vehicles in California in 2026?"
+zev |> 
+  filter(`Data Year` == 2026) |>
+  group_by(MAKE, MODEL) |> 
+  summarize(total = sum(`Number of Vehicles`)) |> 
+  arrange(desc(total))
+# Groups:   MAKE [43]
+#   MAKE    MODEL                total
+#   <chr>   <chr>                <dbl>
+# 1 Tesla   Model Y              53682
+# 2 Tesla   Model 3              17827
+# 3 Hyundai IONIQ 5               7421
+# 4 Toyota  bZ                    5102
+# 5 Toyota  RAV4 Plug-in Hybrid   3186
+# 6 Rivian  R1S                   2820
+# 7 Tesla   Model X               2809
+# 8 Ford    Mustang Mach-E        2659
+# 9 Honda   Prologue              2598
+#10 Toyota  Prius Plug-in Hybrid  2514
+# 140 more rows
+
+#It seems here that the Tesla Model Y was the most popular make and model in 2026 with the limited data that I have. Unfortunately, the 2026 data only has year-to-date records till June 30th, so it doesn't represent the whole calendar year.
+
+#Part B: Tax Credit effect
+zev |> 
+  filter(`Data Year`==2025, FUEL_TYPE %in% c("Electric", "PHEV"), Quarter %in% c("3", "4")) |>
+  group_by(FUEL_TYPE, Quarter) |> 
+  summarize(total = sum(`Number of Vehicles`)) 
+# A tibble: 4 × 3
+# Groups:   FUEL_TYPE [2]
+#  FUEL_TYPE Quarter  total
+#  <chr>       <dbl>  <dbl>
+# 1 Electric        3 110380
+# 2 Electric        4  70360
+# 3 PHEV            3  16595
+# 4 PHEV            4   8587
+
+
+
+#It seems that there is a clear Q3 2025 surge followed by a Q4 drop for bot BEVs and PHEVs. Electric sales decreased from 110380 in Q3 to 70360 in Q4, which is a sharp decrease of about 36.3% (used R as a calculator in the console). The PHEV sales decreased from 16595 to 8587 which is a decrease of 48.3$. The decline after Q3 was larger for PHEV than BEV. This however, does not prove that the expiration of tax incentives were the sole cause of the decline, where there are other confounding factors such as seasonal and personal preferences that may have affected sales.
+
+#Part C: Herfindahl Index
+hi <- function(x) { 
+  shares <- x / sum(x)
+  sum(shares^2)
+}
+
+hi_year <- zev |>
+  group_by(`Data Year`, MAKE) |>
+  summarize(total = sum(`Number of Vehicles`)) |> 
+  group_by(`Data Year`) |>
+  summarize(HI = hi(total))
+
+hi_year
+# A tibble: 19 × 2
+#   `Data Year`    HI
+#          <dbl> <dbl>
+#  1        2008 1    
+#  2        2009 0.498
+#  3        2010 0.542
+#  4        2011 0.568
+#  5        2012 0.298
+#  6        2013 0.181
+#  7        2014 0.148
+#  8        2015 0.122
+#  9        2016 0.142
+# 10        2017 0.138
+# 11        2018 0.251
+# 12        2019 0.273
+# 13        2020 0.388
+# 14        2021 0.323
+# 15        2022 0.375
+# 16        2023 0.280
+# 17        2024 0.222
+# 18        2025 0.192
+# 19        2026 0.280
+
+#The interpretation of this is such that as there is a higher Herfindahl Index value, the market is more concentrated among a few makes, and when it is lower, then it is less concentrated. 
+#This result suggests that past 2022, the pattern such that it becomes less concentrated. In 2022, it was 0.375, and in 2025, it was 0.192. Discounting 2026, because it hasn't been a full calendar year, so I won't include that in this statement as it isn't controllable and fixed yet. This trend however is not consistent across the whole data set as concentration increased during some earlier years where it was rising from 0.498 in 2009 to 0.568 in 2011. 
